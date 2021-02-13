@@ -73,10 +73,10 @@ architecture rtl of clock1 is
 	signal wt  : unsigned (15 downto 0) := (others => '0');
 	signal sec : std_logic := '0';
 
-	shared variable d1 : integer := 0;
-	shared variable d2 : integer := 0;
-	shared variable d3 : integer := 0;
-	shared variable d4 : integer := 0;
+	shared variable d1 : integer range 0 to 255 := 0;
+	shared variable d2 : integer range 0 to 255 := 0;
+	shared variable d3 : integer range 0 to 255 := 0;
+	shared variable d4 : integer range 0 to 255 := 0;
 	shared variable dot_on : std_logic := '1';
 	
 begin
@@ -109,10 +109,10 @@ begin
 	
 	
 	tick_clock: process(nRes, sec) 
-		variable seconds : integer := 0;
-		variable msSec   : integer := 0;
-		variable min : integer := 0;
-		variable hour : integer := 0;
+		variable seconds : integer range 0 to 255 := 0;
+		variable msSec   : integer range 0 to 255 := 0;
+		variable min : integer range 0 to 255 := 0;
+		variable hour : integer range 0 to 255 := 0;
 	begin
 		if (nRes = '0') then
 			d1 := 0;
