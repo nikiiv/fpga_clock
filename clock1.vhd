@@ -3,6 +3,12 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity clock1 is 
+
+	generic (
+		CLOCK_MHZ 	: integer := 50;	
+		TICKS 		: integer := 2_500_000
+	);
+
 	port (
 		clk 	: in std_logic;
 		SEG 	: out std_logic_vector (6 downto 0) := (others => '1');
@@ -17,11 +23,10 @@ entity clock1 is
 		led4	: out std_logic := '1';
 		btn1  : in  std_logic := '1';
 		btn2  : in  std_logic := '1';
-		btn3  : in  std_logic := '1';
-		btn4  : in  std_logic := '1';
+--		btn3  : in  std_logic := '1';
+--		btn4  : in  std_logic := '1';
 		nRes	: in  std_logic := '1');
-	constant CLOCK_MHZ 	: integer := 50;	
-	constant TICKS 		: integer := 25_000_00;
+
 end entity;
 
 architecture rtl of clock1 is
@@ -73,11 +78,8 @@ architecture rtl of clock1 is
 	signal wt  : unsigned (15 downto 0) := (others => '0');
 	signal sec : std_logic := '0';
 
-	shared variable d1 : integer := 0;
-	shared variable d2 : integer := 0;
-	shared variable d3 : integer := 0;
-	shared variable d4 : integer := 0;
-	shared variable dot_on : std_logic := '1';
+	signal d1,d2,d3,d4 : integer range 0 to 9 := 0;
+	signal dot_on : std_logic := '1';
 	
 begin
 
@@ -86,28 +88,17 @@ begin
 			clk => clk,
 			reset_n => nRes,
 			button => btn1,
-			result => x4);
+			result => x2);
 	deb2 : entity work.debounce(logic) 
 		port map (
 			clk => clk,
 			reset_n => nRes,
 			button => btn2,
-			result => x3);
-	deb3 : entity work.debounce(logic) 
-		port map (
-			clk => clk,
-			reset_n => nRes,
-			button => btn3,
-			result => x2);			
-	deb4 : entity work.debounce(logic) 
-		port map (
-			clk => clk,
-			reset_n => nRes,
-			button => btn4,
-			result => x1);			
+			result => x1);
+		
 	
 	sec_counter: process(clk)
-		variable counter : integer := TICKS;
+		variable counter : integer range TICKS downto 0 := TICKS;
 	begin
 		if rising_edge(clk) then
 			counter := counter - 1;
@@ -119,78 +110,73 @@ begin
 	end process;
 	
 	
-	tick_clock: process(sec) 
-		variable seconds : integer := 0;
-		variable msSec   : integer := 0;
+	tick_clock: process(nRes, sec) 
+		variable seconds : integer range 0 to 60 := 0;
+		variable msSec   : integer range 0 to 10 := 0;
+		variable min : integer range 0 to 60 := 0;
+		variable hour : integer range 0 to 24 := 0;
 	begin
 		if (nRes = '0') then
-			d1 := 0;
-			d2 := 0;
-			d3 := 0;
-			d4 := 0;
+			d1 <= 0;
+			d2 <= 0;
+			d3 <= 0;
+			d4 <= 0;
 			seconds := 0;
+			msSec := 0;
 		elsif (rising_edge(sec)) then
 		
 			if x1 = '0' then	
-				d1 := d1+1;
-				if (d1 = 10) then
-					d1 := 0;
+				min := min+1;
+				if (min > 59) then
+					min := 0;
 				end if;
 			end if;	
 			
 			if x2 = '0' then	
-				d2 := d2 + 1;
-				if (d2 = 6) then
-					d2 := 0;
+				hour := hour + 1;
+				if (hour > 23) then
+					hour := 0;
 				end if;
 			end if;	
-			
-			if x3 = '0' then	
-				d3 := d3 + 1;
-				if (d3 > 9) then
-					d3 := 0;
-				end if;	
-			end if;
-			
-			if x4 = '0' then	
-				d4 := d4 + 1;
-				if (d4 > 2) then
-					d4 := 0;
-				end if;	
-			end if;
 			
 			msSec := msSec + 1;
 			if (msSec = 10) then
 				seconds := seconds + 1;	
 				msSec := 0;
-				dot_on := not dot_on;
 			end if;
 
 			
 			LedSeconds(seconds);
 		
-		   if (seconds = 60) then
+			if seconds = 60 then
 				seconds := 0;
-				
-				d1 := d1 + 1;
-			end if;
-
-			if d1 = 10  then
-				d1 := 0;
-				d2 := d2 + 1;
-				if d2 = 6 then
-					d2 := 0;
-					d3 := d3 + 1;
-					
-					if d3 = 4 and d4 = 2 then
-						d3 := 0;
-						d4 := 0;
-					elsif d3 = 10 then
-						d3 := 0;
-						d4 := d4 + 1;
+				dot_on <= not dot_on;
+				min := min + 1;
+				if min > 59 then
+					min := 0;
+					hour := hour + 1;
+					if hour > 23 then
+						hour := 0;
 					end if;
 				end if;
 			end if;
+-- convert decimal h/min to two digits
+--		d4 := hour mod 10;
+
+		d2 <= min / 10;
+		d1 <= min - d2*10;
+		
+		d4 <= hour / 10;
+		d3 <= hour - d4*10;
+		
+--		d1 := min  rem 10;
+--		d2 := (min - d1) / 10;
+		
+--		d3 := hour rem 10;
+--		d4 := (hour - d3) / 10;
+		
+
+
 		end if;
 	end process;
 	
